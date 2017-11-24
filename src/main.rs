@@ -126,3 +126,28 @@ fn run() -> Result<(), Box<Error>> {
     }
     Ok(())
 }
+
+fn format_txn_as_ledger(txn: Transaction, cash_account: String, shares_account: String) -> String {
+    format!("{date} {payee}\n  {to_acct}\t\t{to_amount} {to_currency}\n  {from_acct}\t\t{from_amount} {from_currency}\n\n",
+        date = txn.date,
+        payee = txn.txtype,
+        to_acct = shares_account,
+        to_amount = txn.share,
+        to_currency = txn.investment,
+        from_acct = cash_account,
+        from_amount = txn.amount,
+        from_currency = "USD"
+    )
+}
+
+#[test]
+fn test_format() {
+    let txn = Transaction {
+        date: String::from("04/28/2017"),
+        investment: String::from("FOOS"),
+        txtype: String::from("CONTRIBUTIONS"),
+        amount: Money::of_major(USD, 15),
+        share: Money::of_major(share_currency(), 2),
+    };
+    println!("{}", format_txn_as_ledger(txn, String::from("Assets:Cash"), String::from("Assets:Investments")));
+}
