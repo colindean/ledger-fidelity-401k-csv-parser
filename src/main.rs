@@ -25,7 +25,7 @@ struct Transaction {
     #[serde(deserialize_with = "parse_money")]
     amount: Money, // two decimal places with commas
     #[serde(rename = "Shares/Unit")]
-    #[serde(deserialize_with = "parse_money")]
+    #[serde(deserialize_with = "parse_shares")]
     share: Money, // three decimal places with commas
 }
 
@@ -87,6 +87,18 @@ fn test_workaround() {
 }
 
 
+//FIXME: I hate the duplication between these functions
+// but Rust seems to make it really hard to return functions
+fn parse_shares<'de, D>(deserializer: D) -> Result<Money, D::Error>
+    where D: Deserializer<'de>
+{
+    let as_string = String::deserialize(deserializer)?;
+    eprintln!("{}", as_string);
+    Ok(share_formatter()
+        .parser()
+        .parse(add_currency_symbol(as_string.as_str()).as_str())
+        .expect("amount could not be parsed"))
+}
 
 fn parse_money<'de, D>(deserializer: D) -> Result<Money, D::Error>
     where D: Deserializer<'de>
