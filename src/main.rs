@@ -9,6 +9,7 @@ use std::io;
 use std::process;
 
 use steel_cent::Money;
+use steel_cent::Currency;
 use steel_cent::formatting::FormatSpec;
 use steel_cent::formatting::FormatPart::*;
 
@@ -32,44 +33,67 @@ use serde::de;
 use serde::{Deserialize, Deserializer};
 
 use steel_cent::currency::USD;
-fn formatter() -> FormatSpec {
+fn dollar_formatter() -> FormatSpec {
     FormatSpec::new(',', '.', vec![OptionalMinus, Amount, CurrencySymbol]).with_short_symbol(USD, String::from("$"))
 }
+
+fn share_currency() -> Currency { Currency::new("SHR", 999, 3) }
+
+fn share_formatter() -> FormatSpec {
+    FormatSpec::new(',', '.', vec![OptionalMinus, Amount, CurrencySymbol]).with_short_symbol(share_currency(), String::from("$"))
+}
+
+fn add_currency_symbol(num: &str) -> String {
+    format!("{}$", String::from(num))
+}
+
+
+#[test]
+fn test_share_positive() {
+    assert_eq!(Ok(Money::of_major_minor(share_currency(), 15, 83)),
+               share_formatter().parser().parse(add_currency_symbol("15.083").as_str()));
+}
+
+#[test]
+fn test_share_negative() {
+    assert_eq!(Ok(Money::of_major_minor(share_currency(), -15, -83)),
+               share_formatter().parser().parse(add_currency_symbol("-15.083").as_str()));
+}
+
 #[test]
 fn test_positive() {
     assert_eq!(Ok(Money::of_major_minor(USD, 15, 8)),
-               formatter().parser().parse(add_currency_symbol("15.08").as_str()));
+               dollar_formatter().parser().parse(add_currency_symbol("15.08").as_str()));
 }
 #[test]
 fn test_negative() {
     assert_eq!(Ok(Money::of_major_minor(USD, -15, -8)),
-               formatter().parser().parse(add_currency_symbol("-15.08").as_str()));
+               dollar_formatter().parser().parse(add_currency_symbol("-15.08").as_str()));
 }
 #[test]
 fn test_commas() {
     assert_eq!(Ok(Money::of_major(USD, 1500)),
-               formatter().parser().parse(add_currency_symbol("1,500.00").as_str()));
+               dollar_formatter().parser().parse(add_currency_symbol("1,500.00").as_str()));
 }
 #[test]
 fn test_negative_commas() {
     assert_eq!(Ok(Money::of_major(USD, -1500)),
-               formatter().parser().parse(add_currency_symbol("-1,500.00").as_str()));
+               dollar_formatter().parser().parse(add_currency_symbol("-1,500.00").as_str()));
 }
 #[test]
 fn test_workaround() {
     assert_eq!(Ok(Money::of_major(USD, 1)),
-               formatter().parser().parse(add_currency_symbol("1.00").as_str()));
+               dollar_formatter().parser().parse(add_currency_symbol("1.00").as_str()));
 }
-fn add_currency_symbol(num: &str) -> String {
-    format!("{}$", String::from(num))
-}
+
+
 
 fn parse_money<'de, D>(deserializer: D) -> Result<Money, D::Error>
     where D: Deserializer<'de>
 {
     let as_string = String::deserialize(deserializer)?;
     eprintln!("{}", as_string);
-    Ok(formatter()
+    Ok(dollar_formatter()
         .parser()
         .parse(add_currency_symbol(as_string.as_str()).as_str())
         .expect("amount could not be parsed"))
