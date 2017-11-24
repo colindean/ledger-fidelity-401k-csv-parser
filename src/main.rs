@@ -9,7 +9,8 @@ use std::io;
 use std::process;
 
 use steel_cent::Money;
-use steel_cent::formatting::us_style;
+use steel_cent::formatting::FormatSpec;
+use steel_cent::formatting::FormatPart::*;
 
 #[derive(Debug, Deserialize)]
 struct Transaction {
@@ -21,35 +22,59 @@ struct Transaction {
     txtype: String, // one of: 'DISABILITY PREMIUM', 'Change in Market Value', or 'CONTRIBUTION'
     #[serde(rename = "Amount")]
     #[serde(deserialize_with = "parse_money")]
-    amount: Money, //two decimal places with commas
+    amount: Money, // two decimal places with commas
     #[serde(rename = "Shares/Unit")]
     #[serde(deserialize_with = "parse_money")]
-    share: Money, //three decimal places with commas
+    share: Money, // three decimal places with commas
 }
 
 use serde::de;
 use serde::{Deserialize, Deserializer};
 
+use steel_cent::currency::USD;
+fn formatter() -> FormatSpec {
+    FormatSpec::new(',', '.', vec![OptionalMinus, Amount, CurrencySymbol]).with_short_symbol(USD, String::from("$"))
+}
+#[test]
+fn test_positive() {
+    assert_eq!(Ok(Money::of_major_minor(USD, 15, 8)),
+               formatter().parser().parse(add_currency_symbol("15.08").as_str()));
+}
+#[test]
+fn test_negative() {
+    assert_eq!(Ok(Money::of_major_minor(USD, -15, -8)),
+               formatter().parser().parse(add_currency_symbol("-15.08").as_str()));
+}
+#[test]
+fn test_commas() {
+    assert_eq!(Ok(Money::of_major(USD, 1500)),
+               formatter().parser().parse(add_currency_symbol("1,500.00").as_str()));
+}
+#[test]
+fn test_negative_commas() {
+    assert_eq!(Ok(Money::of_major(USD, -1500)),
+               formatter().parser().parse(add_currency_symbol("-1,500.00").as_str()));
+}
+#[test]
+fn test_workaround() {
+    assert_eq!(Ok(Money::of_major(USD, 1)),
+               formatter().parser().parse(add_currency_symbol("1.00").as_str()));
+}
+fn add_currency_symbol(num: &str) -> String {
+    format!("{}$", String::from(num))
+}
+
 fn parse_money<'de, D>(deserializer: D) -> Result<Money, D::Error>
     where D: Deserializer<'de>
 {
-    struct MaybeMoney(Money);
-
-    impl<'de> de::Visitor<'de> for MaybeMoney {
-        type Value = Money;
-
-        fn expecting(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
-            // write!(f, "a money")
-            f.write_str("a money")
-        }
-        fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
-            where E: ::serde::de::Error
-        {
-            Ok(us_style().parser().parse(v).unwrap())
-        }
-    }
-    deserializer.deserialize_any(MaybeMoney)
+    let as_string = String::deserialize(deserializer)?;
+    eprintln!("{}", as_string);
+    Ok(formatter()
+        .parser()
+        .parse(add_currency_symbol(as_string.as_str()).as_str())
+        .expect("amount could not be parsed"))
 }
+
 
 fn main() {
     if let Err(err) = run() {
