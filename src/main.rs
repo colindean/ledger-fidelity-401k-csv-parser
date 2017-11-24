@@ -93,7 +93,6 @@ fn parse_shares<'de, D>(deserializer: D) -> Result<Money, D::Error>
     where D: Deserializer<'de>
 {
     let as_string = String::deserialize(deserializer)?;
-    eprintln!("{}", as_string);
     Ok(share_formatter()
         .parser()
         .parse(add_currency_symbol(as_string.as_str()).as_str())
@@ -104,7 +103,6 @@ fn parse_money<'de, D>(deserializer: D) -> Result<Money, D::Error>
     where D: Deserializer<'de>
 {
     let as_string = String::deserialize(deserializer)?;
-    eprintln!("{}", as_string);
     Ok(dollar_formatter()
         .parser()
         .parse(add_currency_symbol(as_string.as_str()).as_str())
