@@ -1,5 +1,5 @@
 [package]
-name = "fidelity-csv-to-ledger"
+name = "ledger-fidelity-401k-parser"
 version = "0.1.0"
 authors = ["Colin Dean <git@cad.cx>"]
 
