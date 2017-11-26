@@ -51,45 +51,6 @@ fn add_currency_symbol(num: &str) -> String {
     format!("{}$", String::from(num))
 }
 
-#[test]
-fn test_share_positive() {
-    assert_eq!(Ok(Money::of_major_minor(share_currency(), 15, 83)),
-               share_formatter().parser().parse(add_currency_symbol("15.083").as_str()));
-}
-
-#[test]
-fn test_share_negative() {
-    assert_eq!(Ok(Money::of_major_minor(share_currency(), -15, -83)),
-               share_formatter().parser().parse(add_currency_symbol("-15.083").as_str()));
-}
-
-#[test]
-fn test_positive() {
-    assert_eq!(Ok(Money::of_major_minor(USD, 15, 8)),
-               dollar_formatter().parser().parse(add_currency_symbol("15.08").as_str()));
-}
-#[test]
-fn test_negative() {
-    assert_eq!(Ok(Money::of_major_minor(USD, -15, -8)),
-               dollar_formatter().parser().parse(add_currency_symbol("-15.08").as_str()));
-}
-#[test]
-fn test_commas() {
-    assert_eq!(Ok(Money::of_major(USD, 1500)),
-               dollar_formatter().parser().parse(add_currency_symbol("1,500.00").as_str()));
-}
-#[test]
-fn test_negative_commas() {
-    assert_eq!(Ok(Money::of_major(USD, -1500)),
-               dollar_formatter().parser().parse(add_currency_symbol("-1,500.00").as_str()));
-}
-#[test]
-fn test_workaround() {
-    assert_eq!(Ok(Money::of_major(USD, 1)),
-               dollar_formatter().parser().parse(add_currency_symbol("1.00").as_str()));
-}
-
-
 //FIXME: I hate the duplication between these functions
 // but Rust seems to make it really hard to return functions
 fn parse_shares<'de, D>(deserializer: D) -> Result<Money, D::Error>
@@ -162,4 +123,42 @@ fn test_format() {
         share: Money::of_major(share_currency(), 2),
     };
     println!("{}", format_txn_as_ledger(txn, String::from("Assets:Cash"), String::from("Assets:Investments")));
+}
+
+#[test]
+fn test_share_positive() {
+    assert_eq!(Ok(Money::of_major_minor(share_currency(), 15, 83)),
+               share_formatter().parser().parse(add_currency_symbol("15.083").as_str()));
+}
+
+#[test]
+fn test_share_negative() {
+    assert_eq!(Ok(Money::of_major_minor(share_currency(), -15, -83)),
+               share_formatter().parser().parse(add_currency_symbol("-15.083").as_str()));
+}
+
+#[test]
+fn test_positive() {
+    assert_eq!(Ok(Money::of_major_minor(USD, 15, 8)),
+               dollar_formatter().parser().parse(add_currency_symbol("15.08").as_str()));
+}
+#[test]
+fn test_negative() {
+    assert_eq!(Ok(Money::of_major_minor(USD, -15, -8)),
+               dollar_formatter().parser().parse(add_currency_symbol("-15.08").as_str()));
+}
+#[test]
+fn test_commas() {
+    assert_eq!(Ok(Money::of_major(USD, 1500)),
+               dollar_formatter().parser().parse(add_currency_symbol("1,500.00").as_str()));
+}
+#[test]
+fn test_negative_commas() {
+    assert_eq!(Ok(Money::of_major(USD, -1500)),
+               dollar_formatter().parser().parse(add_currency_symbol("-1,500.00").as_str()));
+}
+#[test]
+fn test_workaround() {
+    assert_eq!(Ok(Money::of_major(USD, 1)),
+               dollar_formatter().parser().parse(add_currency_symbol("1.00").as_str()));
 }
