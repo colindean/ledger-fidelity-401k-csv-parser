@@ -3,6 +3,7 @@ extern crate serde;
 #[macro_use]
 extern crate serde_derive;
 extern crate steel_cent;
+extern crate chrono;
 
 use std::error::Error;
 use std::io;
@@ -13,10 +14,13 @@ use steel_cent::Currency;
 use steel_cent::formatting::FormatSpec;
 use steel_cent::formatting::FormatPart::*;
 
+use chrono::prelude::*;
+
 #[derive(Debug, Deserialize)]
 struct Transaction {
     #[serde(rename = "Date")]
-    date: String, // 04/28/2017
+    #[serde(deserialize_with = "parse_date")]
+    date: NaiveDate, // 04/28/2017
     #[serde(rename = "Investment")]
     investment: String, // any string
     #[serde(rename = "Transaction Type")]
@@ -46,7 +50,6 @@ fn share_formatter() -> FormatSpec {
 fn add_currency_symbol(num: &str) -> String {
     format!("{}$", String::from(num))
 }
-
 
 #[test]
 fn test_share_positive() {
@@ -109,6 +112,15 @@ fn parse_money<'de, D>(deserializer: D) -> Result<Money, D::Error>
         .expect("amount could not be parsed"))
 }
 
+fn parse_date<'de, D>(deserializer: D) -> Result<NaiveDate, D::Error>
+    where D: Deserializer<'de>
+{
+    let as_string = String::deserialize(deserializer)?;
+    NaiveDate::parse_from_str(as_string.as_str(), "%m/%d/%Y")
+        .map_err(de::Error::custom)
+        .map(|d|d)
+}
+
 
 fn main() {
     if let Err(err) = run() {
@@ -122,7 +134,7 @@ fn run() -> Result<(), Box<Error>> {
         csv::ReaderBuilder::new().has_headers(true).flexible(false).from_reader(io::stdin());
     for row in reader.deserialize() {
         let tx: Transaction = row.expect("Unable to parse row");
-        println!("{:?}", tx);
+        println!("{}", format_txn_as_ledger(tx, String::from("Assets:Cash"), String::from("Assets:Investments")));
     }
     Ok(())
 }
@@ -143,7 +155,7 @@ fn format_txn_as_ledger(txn: Transaction, cash_account: String, shares_account: 
 #[test]
 fn test_format() {
     let txn = Transaction {
-        date: String::from("04/28/2017"),
+        date: NaiveDate::parse_from_str("04/28/2017", "%m/%d/%Y").unwrap(),
         investment: String::from("FOOS"),
         txtype: String::from("CONTRIBUTIONS"),
         amount: Money::of_major(USD, 15),
