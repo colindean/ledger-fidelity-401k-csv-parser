@@ -13,6 +13,7 @@ use steel_cent::Money;
 use steel_cent::Currency;
 use steel_cent::formatting::FormatSpec;
 use steel_cent::formatting::FormatPart::*;
+use steel_cent::formatting::FormatPart;
 
 use chrono::prelude::*;
 
@@ -38,13 +39,28 @@ use serde::{Deserialize, Deserializer};
 
 use steel_cent::currency::USD;
 fn dollar_formatter() -> FormatSpec {
-    FormatSpec::new(',', '.', vec![OptionalMinus, Amount, CurrencySymbol]).with_short_symbol(USD, String::from("$"))
+    usd_formatter(vec![OptionalMinus, Amount, CurrencySymbol])
+}
+fn dollar_formatter_without_symbol() -> FormatSpec {
+    usd_formatter(vec![OptionalMinus, Amount])
+}
+fn usd_formatter(template: Vec<FormatPart>) -> FormatSpec {
+    comma_and_period_formatter(template).with_short_symbol(USD, String::from("$"))
 }
 
 fn share_currency() -> Currency { Currency::new("SHR", 999, 3) }
 
 fn share_formatter() -> FormatSpec {
-    FormatSpec::new(',', '.', vec![OptionalMinus, Amount, CurrencySymbol]).with_short_symbol(share_currency(), String::from("$"))
+    shr_formatter(vec![OptionalMinus, Amount, CurrencySymbol])
+}
+fn share_formatter_without_symbol() -> FormatSpec {
+    shr_formatter(vec![OptionalMinus, Amount])
+}
+fn shr_formatter(template: Vec<FormatPart>) -> FormatSpec {
+    comma_and_period_formatter(template).with_short_symbol(share_currency(), String::from("$"))
+}
+fn comma_and_period_formatter(template: Vec<FormatPart>) -> FormatSpec {
+    FormatSpec::new(',', '.', template)
 }
 
 fn add_currency_symbol(num: &str) -> String {
@@ -105,10 +121,10 @@ fn format_txn_as_ledger(txn: Transaction, cash_account: String, shares_account: 
         date = txn.date,
         payee = txn.txtype,
         to_acct = shares_account,
-        to_amount = txn.share,
+        to_amount = steel_cent::formatting::format(&share_formatter_without_symbol(), &txn.share),
         to_currency = txn.investment,
         from_acct = cash_account,
-        from_amount = txn.amount,
+        from_amount = steel_cent::formatting::format(&dollar_formatter_without_symbol(), &txn.amount),
         from_currency = "USD"
     )
 }
