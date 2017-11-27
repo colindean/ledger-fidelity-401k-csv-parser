@@ -17,6 +17,8 @@ use steel_cent::formatting::FormatPart;
 
 use chrono::prelude::*;
 
+use std::ops::Neg;
+
 #[derive(Debug, Deserialize)]
 struct Transaction {
     #[serde(rename = "Date")]
@@ -116,15 +118,27 @@ fn run() -> Result<(), Box<Error>> {
     Ok(())
 }
 
+fn money_is_negative(money: Money) -> bool {
+    money.minor_amount() < 0
+}
+
 fn format_txn_as_ledger(txn: Transaction, cash_account: String, shares_account: String) -> String {
+    let cash_amount = if money_is_negative(txn.share) {
+        txn.amount
+    } else {
+        txn.amount.neg()
+    };
+    let shares = steel_cent::formatting::format(&share_formatter_without_symbol(), &txn.share);
+    let cash = steel_cent::formatting::format(&dollar_formatter_without_symbol(), &cash_amount);
+
     format!("{date} {payee}\n  {to_acct}\t\t{to_amount} {to_currency}\n  {from_acct}\t\t{from_amount} {from_currency}\n\n",
         date = txn.date,
         payee = txn.txtype,
         to_acct = shares_account,
-        to_amount = steel_cent::formatting::format(&share_formatter_without_symbol(), &txn.share),
+        to_amount = shares,
         to_currency = txn.investment,
         from_acct = cash_account,
-        from_amount = steel_cent::formatting::format(&dollar_formatter_without_symbol(), &txn.amount),
+        from_amount = cash,
         from_currency = "USD"
     )
 }
