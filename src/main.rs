@@ -108,7 +108,7 @@ fn main() {
     }
 }
 
-fn run() -> Result<(), Box<Error>> {
+fn run() -> Result<(), Box<dyn Error>> {
     let mut reader =
         csv::ReaderBuilder::new().has_headers(true).flexible(false).from_reader(io::stdin());
     for row in reader.deserialize() {
